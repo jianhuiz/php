@@ -26,7 +26,8 @@ ENV PHPIZE_DEPS \
 		libc-dev \
 		make \
 		pkg-config \
-		re2c
+		re2c \
+		systemtap-sdt-dev
 
 # persistent / runtime deps
 RUN set -eux; \
@@ -150,6 +151,12 @@ RUN set -eux; \
 		--with-config-file-path="$PHP_INI_DIR" \
 		--with-config-file-scan-dir="$PHP_INI_DIR/conf.d" \
 		\
+# debug, dtrace
+		--enable-debug --enable-dtrace \
+# system v
+		--enable-sysvsem --enable-sysvshm --enable-sysvmsg \
+# fork
+		--enable-pcntl \
 # make sure invalid --configure-flags are fatal errors intead of just warnings
 		--enable-option-checking=fatal \
 		\
@@ -211,6 +218,12 @@ RUN set -eux; \
 	php --version
 
 COPY docker-php-ext-* docker-php-entrypoint /usr/local/bin/
+
+# build and debug tools
+RUN apt-get update && apt-get install -y git \
+	build-essential automake autoconf libtool pkg-config zip unzip \
+	gdb vim procps iproute2 iputils-ping \
+	&& pecl install opencensus-alpha && docker-php-ext-enable opencensus
 
 # sodium was built as a shared module (so that it can be replaced later if so desired), so let's enable it too (https://github.com/docker-library/php/issues/598)
 RUN docker-php-ext-enable sodium
